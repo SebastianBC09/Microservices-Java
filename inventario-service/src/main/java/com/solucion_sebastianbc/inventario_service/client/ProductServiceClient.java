@@ -31,7 +31,7 @@ public class ProductServiceClient {
     @Value("${product-service.url}")
     private String productosServiceUrl;
 
-    @Value("${product-service.apy-key}")
+    @Value("${product-service.api-key}")
     private String productosServiceApiKey;
 
     @Autowired
