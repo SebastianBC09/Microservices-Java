@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  postgres-db:
+    image: postgres:17
+    container_name: postgres_db_pruebatecnica
+    environment:
+      POSTGRES_USER: usuario_prueba
+      POSTGRES_PASSWORD: Colombia2025!
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_pruebatecnica:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U usuario_prueba"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  productos-service:
+    build:
+      context: ./productos-service
+      dockerfile: Dockerfile
+    container_name: productos_service_pruebatecnica
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_APPLICATION_NAME: productos-service
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/productos_db
+      SPRING_DATASOURCE_USERNAME: usuario_prueba
+      SPRING_DATASOURCE_PASSWORD: Colombia2025!
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    restart: on-failure
+
+  inventario-service:
+    build:
+      context: ./inventario-service
+      dockerfile: Dockerfile
+    container_name: inventario_service_pruebatecnica
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_APPLICATION_NAME: inventario-service
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/inventario_db
+      SPRING_DATASOURCE_USERNAME: usuario_prueba
+      SPRING_DATASOURCE_PASSWORD: Colombia2025!
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      PRODUCT_SERVICE_URL: http://productos-service:8080/api/v1/productos
+      PRODUCT_SERVICE_API_KEY: tu-api-key-secreta
+      PRODUCT_SERVICE_CONNECT_TIMEOUT: 5
+      PRODUCT_SERVICE_READ_TIMEOUT: 5
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      productos-service:
+        condition: service_started
+    restart: on-failure
+
+volumes:
+  postgres_data_pruebatecnica:
